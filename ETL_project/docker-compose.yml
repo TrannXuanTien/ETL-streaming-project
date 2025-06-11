@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - etl-network
+      
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+    networks:
+      - etl-network
+      
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.4.0
+    depends_on:
+      - kafka
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: connect-cluster
+      CONNECT_CONFIG_STORAGE_TOPIC: connect_configs
+      CONNECT_OFFSET_STORAGE_TOPIC: connect_offsets
+      CONNECT_STATUS_STORAGE_TOPIC: connect_status
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+    volumes:
+      - kafka-connect-plugins:/usr/share/confluent-hub-components
+      - ./mysql-connector-j-8.0.33.jar:/usr/share/confluent-hub-components/mysql-driver/mysql-connector-j-8.0.33.jar
+    command: >
+      bash -c "
+      echo 'Installing JDBC Connector...' &&
+      confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.7.4 &&
+      echo 'Copying MySQL driver to JDBC connector lib directory...' &&
+      mkdir -p /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/lib/ &&
+      cp /usr/share/confluent-hub-components/mysql-driver/mysql-connector-j-8.0.33.jar /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/lib/ &&
+      ls -la /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/lib/mysql-connector* &&
+      echo 'MySQL Driver installed successfully' &&
+      echo 'Starting Kafka Connect...' &&
+      /etc/confluent/docker/run
+      "
+    networks:
+      - etl-network
+  mysqldb:
+    image: mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "1"
+    command:
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --server-id=1
+      - --local-infile=1
+      - --secure-file-priv=
+      - --binlog-do-db=DE1
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/mysql-files  
+    networks:
+      - etl-network
+      
+  cassandradb:
+    image: cassandra:3.11
+    ports:
+        - "9042:9042"
+    environment:
+        - CASSANDRA_CDC_ENABLED=true
+    volumes:
+        - cassandra_data:/var/lib/cassandra
+        - ./data:/var/lib/cassandra-files
+    networks:
+      - etl-network
+
+
+
+networks:
+  etl-network:
+    driver: bridge    
+
+volumes:
+  mysql_data:
+  cassandra_data:
+  kafka-connect-plugins:

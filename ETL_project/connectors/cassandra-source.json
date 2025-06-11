@@ -1,0 +1,16 @@
+{
+  "name": "cassandra-source-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.cassandra.CassandraConnector",
+    "tasks.max": "1",
+    "cassandra.hosts": "cassandra:9042",
+    "cassandra.keyspace": "logs", 
+    "cassandra.table.whitelist": "logs.tracking",
+    "topic.prefix": "cassandra",
+    "snapshot.mode": "initial",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false", 
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false"
+  }
+}

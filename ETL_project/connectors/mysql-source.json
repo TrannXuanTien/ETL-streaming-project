@@ -1,0 +1,19 @@
+{
+"name": "mysql-jdbc-source-connector",
+"config": {
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "tasks.max": "1",
+  "connection.url": "jdbc:mysql://etl_project-mysqldb-1:3306/DE1",
+  "connection.user": "root",
+  "connection.password": "1",
+  "table.whitelist": "job",
+  "mode": "incrementing",
+  "incrementing.column.name": "id",
+  "topic.prefix": "mysqldb.DE1.",
+  "poll.interval.ms": 5000,
+  "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "key.converter.schemas.enable": "false",
+  "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.schemas.enable": "false"
+}
+}

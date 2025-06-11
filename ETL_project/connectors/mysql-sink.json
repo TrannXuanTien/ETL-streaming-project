@@ -1,0 +1,19 @@
+{
+  "name": "mysql-jdbc-sink",
+  "config": {
+      "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+      "tasks.max": "1",
+      "topics": "processed-events",
+      "connection.url": "jdbc:mysql://etl_project-mysqldb-1:3306/DE1",
+      "connection.user": "root",
+      "connection.password": "1",
+      "table.name.format": "events",
+      "auto.create": "false",
+      "auto.evolve": "false",
+      "insert.mode": "insert",
+      "pk.mode": "none",
+      "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+      "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "value.converter.schemas.enable": "false"
+    }
+}
