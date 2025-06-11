@@ -125,6 +125,9 @@ chmod +x deploy-connectors.sh
 ### 2. Change Data Capture
 - Kafka Connect JDBC connector monitors MySQL `job` table
 - Changes are published to `mysqldb.DE1.job` Kafka topic
+- Monitoring "updated_at" time in "events" table and time in "tracking" table for new data input
+- Read only new data from "tracking" table then process and write to "events" 
+
 
 ### 3. Real-Time Processing
 - Spark Streaming application processes:
